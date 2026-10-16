@@ -648,10 +648,10 @@ export class Engine3D {
       ctx.globalAlpha = alpha;
 
       if (p.shape === 'spark') {
-        ctx.fillRect(screenPos.x, screenPos.y, p.size * 2, p.size * 0.8);
+        ctx.fillRect(screenPos.x, screenPos.y, Math.max(0.5, p.size * 2), Math.max(0.5, p.size * 0.8));
       } else {
         ctx.beginPath();
-        ctx.arc(screenPos.x, screenPos.y, p.size, 0, Math.PI * 2);
+        ctx.arc(screenPos.x, screenPos.y, Math.max(0.1, p.size || 2), 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();

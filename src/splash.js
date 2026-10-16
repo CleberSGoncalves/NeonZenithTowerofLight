@@ -121,147 +121,154 @@ export class CinematicIntro {
 
   loop(timestamp) {
     if (this.finished) return;
-    const elapsedSec = (timestamp - this.startTime) / 1000;
+    try {
+      if (!this.startTime) this.startTime = timestamp;
+      const elapsedSec = Math.max(0, (timestamp - this.startTime) / 1000);
 
-    // Trigger audio once user interacts or starts
-    if (!this.soundTriggered && elapsedSec >= 0.05) {
-      this.soundTriggered = true;
-      sound.playFluidClebIntro();
-    }
+      // Trigger audio once user interacts or starts
+      if (!this.soundTriggered && elapsedSec >= 0.05) {
+        this.soundTriggered = true;
+        sound.playFluidClebIntro();
+      }
 
-    const w = this.canvas.width / (Math.min(window.devicePixelRatio || 1, 2));
-    const h = this.canvas.height / (Math.min(window.devicePixelRatio || 1, 2));
-    const ctx = this.ctx;
+      const w = this.canvas.width / (Math.min(window.devicePixelRatio || 1, 2));
+      const h = this.canvas.height / (Math.min(window.devicePixelRatio || 1, 2));
+      const ctx = this.ctx;
 
-    ctx.clearRect(0, 0, w, h);
+      ctx.clearRect(0, 0, w, h);
 
-    // Deep Dark Background
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-    bgGrad.addColorStop(0, '#020617');
-    bgGrad.addColorStop(0.5, '#050c26');
-    bgGrad.addColorStop(1, '#08051a');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, w, h);
+      // Deep Dark Background
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+      bgGrad.addColorStop(0, '#020617');
+      bgGrad.addColorStop(0.5, '#050c26');
+      bgGrad.addColorStop(1, '#08051a');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
 
-    // Parallax Cosmic Dust
-    for (const p of this.particles) {
-      p.y += p.speedY * 0.016;
-      if (p.y < 0) p.y = 1;
-      if (p.y > 1) p.y = 0;
-      ctx.fillStyle = p.color;
-      ctx.globalAlpha = p.alpha * (0.6 + 0.4 * Math.sin(elapsedSec * 3 + p.x * 10));
-      ctx.fillRect(p.x * w, p.y * h, p.r, p.r);
-    }
-    ctx.globalAlpha = 1.0;
+      // Parallax Cosmic Dust
+      for (const p of this.particles) {
+        p.y += p.speedY * 0.016;
+        if (p.y < 0) p.y = 1;
+        if (p.y > 1) p.y = 0;
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha * (0.6 + 0.4 * Math.sin(elapsedSec * 3 + p.x * 10));
+        ctx.fillRect(p.x * w, p.y * h, p.r, p.r);
+      }
+      ctx.globalAlpha = 1.0;
 
-    // ── PHASE 1: FLUIDCLEB INTERACTIVE PROCEDURAL SPLASH (0.0s to 2.8s) ──
-    if (elapsedSec < 2.8) {
-      const cx = w * 0.5;
-      const cy = h * 0.44;
+      // ── PHASE 1: FLUIDCLEB INTERACTIVE PROCEDURAL SPLASH (0.0s to 2.8s) ──
+      if (elapsedSec < 2.8) {
+        const cx = w * 0.5;
+        const cy = h * 0.44;
 
-      // 1. Two Ascending Orbs converging to center (0.0s to 1.2s)
-      if (elapsedSec < 1.3) {
-        const prog = Math.min(1.0, elapsedSec / 1.1);
-        const ease = 1 - Math.pow(1 - prog, 3);
-        const dist = (1 - ease) * 160;
+        // 1. Two Ascending Orbs converging to center (0.0s to 1.2s)
+        if (elapsedSec < 1.3) {
+          const prog = Math.max(0, Math.min(1.0, elapsedSec / 1.1));
+          const ease = Math.max(0, 1 - Math.pow(1 - prog, 3));
+          const dist = (1 - ease) * 160;
+          const orbRadius = Math.max(0.1, 14 * ease);
 
-        // Orb 1 (#00f5ff)
+          // Orb 1 (#00f5ff)
+          ctx.fillStyle = '#00f5ff';
+          ctx.shadowColor = '#00f5ff';
+          ctx.shadowBlur = 20;
+          ctx.beginPath();
+          ctx.arc(cx - dist, cy, orbRadius, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Orb 2 (#38bdf8)
+          ctx.fillStyle = '#38bdf8';
+          ctx.shadowColor = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(cx + dist, cy, orbRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        // 2. Fusion & Metallic Droplet Formation (1.2s to 2.8s)
+        if (elapsedSec >= 1.1) {
+          const dropProg = Math.max(0, Math.min(1.0, (elapsedSec - 1.1) / 0.7));
+          const dropEase = Math.max(0.01, 1 - Math.pow(1 - dropProg, 3));
+
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.scale(dropEase, dropEase);
+
+          // Core Fusion Flare
+          const flareGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 50);
+          flareGrad.addColorStop(0, 'rgba(0, 245, 255, 0.9)');
+          flareGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.4)');
+          flareGrad.addColorStop(1, 'rgba(0, 245, 255, 0)');
+          ctx.fillStyle = flareGrad;
+          ctx.beginPath();
+          ctx.arc(0, 0, 50, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Metallic Droplet (#94a3b8)
+          ctx.fillStyle = '#94a3b8';
+          ctx.shadowColor = '#00f5ff';
+          ctx.shadowBlur = 18;
+          ctx.beginPath();
+          ctx.arc(0, 2, 16, 0, Math.PI);
+          ctx.quadraticCurveTo(0, -22, 0, -26);
+          ctx.quadraticCurveTo(0, -22, -16, 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          ctx.restore();
+        }
+
+        // 3. FluidCleb Interactive Text Appearance (1.4s to 2.8s)
+        if (elapsedSec >= 1.4) {
+          const textProg = Math.max(0, Math.min(1.0, (elapsedSec - 1.4) / 0.6));
+          ctx.save();
+          ctx.globalAlpha = textProg;
+          ctx.textAlign = 'center';
+
+          // Title: FLUIDCLEB
+          ctx.font = '800 36px "Montserrat", sans-serif';
+          ctx.fillStyle = '#00f5ff';
+          ctx.shadowColor = '#00f5ff';
+          ctx.shadowBlur = 16;
+          ctx.fillText('FLUIDCLEB', cx, cy + 62);
+
+          // Subtitle: INTERACTIVE
+          ctx.font = '700 13px "Montserrat", sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.shadowBlur = 0;
+          ctx.letterSpacing = '5px';
+          ctx.fillText('INTERACTIVE', cx + 2, cy + 84);
+
+          ctx.restore();
+        }
+
+        // 4. Subtle Progress Bar at bottom of splash
+        const barProg = Math.max(0, Math.min(1.0, elapsedSec / 2.7));
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.fillRect(cx - 80, cy + 115, 160, 4);
         ctx.fillStyle = '#00f5ff';
         ctx.shadowColor = '#00f5ff';
-        ctx.shadowBlur = 20;
-        ctx.beginPath();
-        ctx.arc(cx - dist, cy, 14 * ease, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Orb 2 (#38bdf8)
-        ctx.fillStyle = '#38bdf8';
-        ctx.shadowColor = '#38bdf8';
-        ctx.beginPath();
-        ctx.arc(cx + dist, cy, 14 * ease, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.shadowBlur = 6;
+        ctx.fillRect(cx - 80, cy + 115, 160 * barProg, 4);
         ctx.shadowBlur = 0;
+      } else {
+        // ── PHASE 2: LORE OVERLAY & LAND IN GAMEPLAY (>= 2.8s) ──
+        if (this.loreBox && this.loreBox.classList.contains('hidden')) {
+          this.loreBox.classList.remove('hidden');
+          this.loreStartTime = timestamp;
+        }
+        // Auto-advance to gameplay after 4.5s of lore if user is passive
+        if (this.loreStartTime && (timestamp - this.loreStartTime) > 4500) {
+          this.finish();
+          return;
+        }
       }
 
-      // 2. Fusion & Metallic Droplet Formation (1.2s to 2.8s)
-      if (elapsedSec >= 1.1) {
-        const dropProg = Math.min(1.0, (elapsedSec - 1.1) / 0.7);
-        const dropEase = 1 - Math.pow(1 - dropProg, 3);
-
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.scale(dropEase, dropEase);
-
-        // Core Fusion Flare
-        const flareGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 50);
-        flareGrad.addColorStop(0, 'rgba(0, 245, 255, 0.9)');
-        flareGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.4)');
-        flareGrad.addColorStop(1, 'rgba(0, 245, 255, 0)');
-        ctx.fillStyle = flareGrad;
-        ctx.beginPath();
-        ctx.arc(0, 0, 50, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Metallic Droplet (#94a3b8)
-        ctx.fillStyle = '#94a3b8';
-        ctx.shadowColor = '#00f5ff';
-        ctx.shadowBlur = 18;
-        ctx.beginPath();
-        ctx.arc(0, 2, 16, 0, Math.PI);
-        ctx.quadraticCurveTo(0, -22, 0, -26);
-        ctx.quadraticCurveTo(0, -22, -16, 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        ctx.restore();
-      }
-
-      // 3. FluidCleb Interactive Text Appearance (1.4s to 2.8s)
-      if (elapsedSec >= 1.4) {
-        const textProg = Math.min(1.0, (elapsedSec - 1.4) / 0.6);
-        ctx.save();
-        ctx.globalAlpha = textProg;
-        ctx.textAlign = 'center';
-
-        // Title: FLUIDCLEB
-        ctx.font = '800 36px "Montserrat", sans-serif';
-        ctx.fillStyle = '#00f5ff';
-        ctx.shadowColor = '#00f5ff';
-        ctx.shadowBlur = 16;
-        ctx.fillText('FLUIDCLEB', cx, cy + 62);
-
-        // Subtitle: INTERACTIVE
-        ctx.font = '700 13px "Montserrat", sans-serif';
-        ctx.fillStyle = '#94a3b8';
-        ctx.shadowBlur = 0;
-        ctx.letterSpacing = '5px';
-        ctx.fillText('INTERACTIVE', cx + 2, cy + 84);
-
-        ctx.restore();
-      }
-
-      // 4. Subtle Progress Bar at bottom of splash
-      const barProg = Math.min(1.0, elapsedSec / 2.7);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      ctx.fillRect(cx - 80, cy + 115, 160, 4);
-      ctx.fillStyle = '#00f5ff';
-      ctx.shadowColor = '#00f5ff';
-      ctx.shadowBlur = 6;
-      ctx.fillRect(cx - 80, cy + 115, 160 * barProg, 4);
-      ctx.shadowBlur = 0;
-    } else {
-      // ── PHASE 2: LORE OVERLAY & LAND IN GAMEPLAY (>= 2.8s) ──
-      if (this.loreBox && this.loreBox.classList.contains('hidden')) {
-        this.loreBox.classList.remove('hidden');
-        this.loreStartTime = timestamp;
-      }
-      // Auto-advance to gameplay after 4.5s of lore if user is passive
-      if (this.loreStartTime && (timestamp - this.loreStartTime) > 4500) {
-        this.finish();
-        return;
-      }
+      this.animId = requestAnimationFrame((ts) => this.loop(ts));
+    } catch (err) {
+      console.warn('[CinematicIntro] Render exception, proceeding immediately to gameplay:', err);
+      this.finish();
     }
-
-    this.animId = requestAnimationFrame((ts) => this.loop(ts));
   }
 }
 
