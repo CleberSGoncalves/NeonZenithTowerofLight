@@ -18,13 +18,28 @@ class CrazyGamesBridge {
     if (typeof window !== 'undefined' && window.CrazyGames && window.CrazyGames.SDK) {
       try {
         this.sdk = window.CrazyGames.SDK;
-        // Watchdog: If SDK.init() takes longer than 600ms (e.g. 7s check outside CrazyGames), continue without blocking
+        let initFinished = false;
+
+        // Watchdog: If SDK.init() takes longer than 600ms (e.g. outside crazygames.com), don't block boot
         await Promise.race([
-          this.sdk.init(),
+          this.sdk.init().then(() => {
+            initFinished = true;
+            this.isInitialized = true;
+            console.log('[CrazyGames] SDK v3 initialized successfully ✓');
+          }).catch((err) => {
+            console.warn('[CrazyGames] SDK init rejected:', err);
+          }),
           new Promise((resolve) => setTimeout(resolve, 600))
         ]);
-        this.isInitialized = true;
-        console.log('[CrazyGames] SDK v3 initialized successfully ✓');
+
+        if (!initFinished) {
+          console.warn('[CrazyGames] SDK init timed out (running outside live portal). Safe fallback mode active.');
+          // Allow init to finish in background if it eventually completes
+          this.sdk.init().then(() => {
+            this.isInitialized = true;
+            console.log('[CrazyGames] SDK v3 background init completed ✓');
+          }).catch(() => {});
+        }
       } catch (err) {
         console.warn('[CrazyGames] SDK init error / AdBlock detected:', err);
         this.hasAdblock = true;
@@ -46,9 +61,10 @@ class CrazyGamesBridge {
   gameplayStart() {
     if (this.isInitialized && this.sdk && this.sdk.game && typeof this.sdk.game.gameplayStart === 'function') {
       try {
-        this.sdk.game.gameplayStart();
+        const p = this.sdk.game.gameplayStart();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
       } catch (e) {
-        console.warn('[CrazyGames] gameplayStart error:', e);
+        console.warn('[CrazyGames] gameplayStart error bypassed:', e);
       }
     }
   }
@@ -56,9 +72,10 @@ class CrazyGamesBridge {
   gameplayStop() {
     if (this.isInitialized && this.sdk && this.sdk.game && typeof this.sdk.game.gameplayStop === 'function') {
       try {
-        this.sdk.game.gameplayStop();
+        const p = this.sdk.game.gameplayStop();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
       } catch (e) {
-        console.warn('[CrazyGames] gameplayStop error:', e);
+        console.warn('[CrazyGames] gameplayStop error bypassed:', e);
       }
     }
   }
@@ -66,7 +83,8 @@ class CrazyGamesBridge {
   happyTime() {
     if (this.isInitialized && this.sdk && this.sdk.game && typeof this.sdk.game.happytime === 'function') {
       try {
-        this.sdk.game.happytime();
+        const p = this.sdk.game.happytime();
+        if (p && typeof p.catch === 'function') p.catch(() => {});
       } catch (e) {}
     }
   }

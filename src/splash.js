@@ -125,6 +125,14 @@ export class CinematicIntro {
       sound.playButtonClick();
     } catch {}
 
+    // Instantly fade out wrapper and schedule removal
+    this.wrapper.classList.add('intro-fade-out');
+    setTimeout(() => {
+      try {
+        this.wrapper.remove();
+      } catch {}
+    }, 250);
+
     // Immediately notify GameController so active runner & HUD take over instantly!
     if (this.onComplete) {
       try {
@@ -133,13 +141,6 @@ export class CinematicIntro {
         console.warn('[CinematicIntro] onComplete error:', err);
       }
     }
-
-    this.wrapper.classList.add('intro-fade-out');
-    setTimeout(() => {
-      try {
-        this.wrapper.remove();
-      } catch {}
-    }, 250);
   }
 
   loop(timestamp) {
