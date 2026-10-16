@@ -12,6 +12,7 @@ import { GameHUD } from './hud.js';
 import { sound } from './audio.js';
 import { storage } from './storage.js';
 import { crazyGames } from './crazygames.js';
+import { VirtualJoystick } from './joystick.js';
 
 export class GameController {
   constructor(canvas) {
@@ -80,6 +81,7 @@ export class GameController {
       getGameMode: () => this.gameMode,
       onModalOpen: () => {
         this.isPaused = true;
+        if (this.joystick) this.joystick.reset();
         crazyGames.gameplayStop();
       },
       onModalClose: () => {
@@ -97,13 +99,26 @@ export class GameController {
       }
     });
 
-    // Canvas click/tap to jump and start
-    if (this.canvas) {
-      this.canvas.addEventListener('pointerdown', (e) => {
-        // Don't trigger if click is on UI buttons
-        if (e.target !== this.canvas) return;
+    // Initialize High-Performance Floating Virtual Directional Joystick (Sobrevivente da Névoa mechanics)
+    this.joystick = new VirtualJoystick({
+      canvas: this.canvas,
+      onJump: () => {
         this.ensureGameStarted();
         this.handleJumpInput();
+      },
+      onStart: () => {
+        this.ensureGameStarted();
+      }
+    });
+
+    // Canvas click/tap to jump and start (Only on right half of screen, avoiding joystick)
+    if (this.canvas) {
+      this.canvas.addEventListener('pointerdown', (e) => {
+        if (e.target !== this.canvas) return;
+        if (e.clientX >= window.innerWidth * 0.55) {
+          this.ensureGameStarted();
+          this.handleJumpInput();
+        }
       });
     }
 
@@ -478,6 +493,7 @@ export class GameController {
     if (this.isPaused || this.isAdPaused || this.isHitStopped) return;
 
     const clampedDt = Math.min(0.05, rawDt);
+    if (this.joystick) this.joystick.update(clampedDt, this.engine.viewWidth, this.engine.viewHeight);
     this.physicsAccumulator += clampedDt;
 
     while (this.physicsAccumulator >= this.FIXED_DT) {
@@ -627,8 +643,9 @@ export class GameController {
       }
     }
 
-    // Controles e Física
-    let moveX = this.touchInput.moveX;
+    // Controles e Física (Joystick Virtual Analógico + Teclado)
+    const joyX = this.joystick ? this.joystick.getMoveX() : 0;
+    let moveX = Math.abs(joyX) > 0.04 ? joyX : this.touchInput.moveX;
     if (this.keys['KeyA'] || this.keys['ArrowLeft']) moveX -= 1;
     if (this.keys['KeyD'] || this.keys['ArrowRight']) moveX += 1;
     this.input.moveX = Math.max(-1, Math.min(1, moveX));
@@ -757,7 +774,8 @@ export class GameController {
       dt,
       this.activeBoss,
       this.bossBullets,
-      this.healOrbs
+      this.healOrbs,
+      this.joystick
     );
   }
 }

@@ -159,7 +159,7 @@ export class Engine3D {
     return { x: sx, y: sy };
   }
 
-  render(sector, player, particles, dt, boss = null, bossBullets = [], healOrbs = []) {
+  render(sector, player, particles, dt, boss = null, bossBullets = [], healOrbs = [], joystick = null) {
     this.time += dt;
     const width = this.viewWidth;
     const height = this.viewHeight;
@@ -296,6 +296,15 @@ export class Engine3D {
     }
 
     ctx.restore();
+
+    // 11. Render Cyber Virtual Directional Joystick (Mobile/Touch UI)
+    if (joystick && typeof joystick.render === 'function') {
+      try {
+        joystick.render(ctx, width, height);
+      } catch (errJoy) {
+        console.warn('[Joystick Render Exception]', errJoy);
+      }
+    }
   }
 
   // ── EMERGENCY HEAL ORB RENDERING ──

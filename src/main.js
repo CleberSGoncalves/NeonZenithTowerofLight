@@ -33,6 +33,7 @@ async function boot() {
 
   // Instantiate Central Game Controller immediately so canvas & HUD are live
   const game = new GameController(canvas);
+  window.__game = game;
 
   // High performance Delta-Time Loop
   let lastTime = performance.now();
