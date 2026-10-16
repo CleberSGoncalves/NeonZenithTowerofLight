@@ -41,8 +41,17 @@ async function boot() {
     const dt = Math.min(0.05, (currentTime - lastTime) / 1000);
     lastTime = currentTime;
 
-    game.update(dt);
-    game.render(dt);
+    try {
+      game.update(dt);
+    } catch (err) {
+      console.warn('[Engine Loop] update exception bypassed:', err);
+    }
+
+    try {
+      game.render(dt);
+    } catch (err) {
+      console.warn('[Engine Loop] render exception bypassed:', err);
+    }
 
     requestAnimationFrame(gameLoop);
   }

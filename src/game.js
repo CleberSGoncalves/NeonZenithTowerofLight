@@ -297,80 +297,114 @@ export class GameController {
   handleSectorVictory() {
     if (this.isRoundOver) return;
     this.isRoundOver = true;
-    crazyGames.gameplayStop();
 
-    const totalOrbs = this.currentSector.orbs.length;
-    const starsEarned = this.hud.updateStarProgress(
-      this.orbsCollected,
-      totalOrbs,
-      this.levelTime,
-      this.currentSector.parTime,
-      true
-    );
+    try { crazyGames.gameplayStop(); } catch (e) { console.warn(e); }
 
-    const timeBonus = Math.max(0, Math.floor((this.currentSector.parTime - this.levelTime) * 15));
-    const finalScore = Math.floor((this.score + 500 + timeBonus + starsEarned * 200) * this.scoreMultiplier);
-    const baseBits = Math.floor((50 + starsEarned * 30 + this.orbsCollected * 10) * (this.gameMode === 'boss_rush' ? 1.5 : 1.0));
+    let starsEarned = 1;
+    let finalScore = this.score;
+    let baseBits = 50;
 
-    storage.recordSectorClear(this.currentSectorIndex, starsEarned, this.levelTime, finalScore, baseBits);
-    this.hud.updateBitsDisplay();
+    try {
+      const totalOrbs = this.currentSector ? this.currentSector.orbs.length : 0;
+      const parTime = this.currentSector ? this.currentSector.parTime : 30;
+      starsEarned = this.hud.updateStarProgress(
+        this.orbsCollected,
+        totalOrbs,
+        this.levelTime,
+        parTime,
+        true
+      );
 
-    sound.playVictory();
-    if (starsEarned === 3) {
-      crazyGames.happyTime();
+      const timeBonus = Math.max(0, Math.floor((parTime - this.levelTime) * 15));
+      finalScore = Math.floor((this.score + 500 + timeBonus + starsEarned * 200) * this.scoreMultiplier);
+      baseBits = Math.floor((50 + starsEarned * 30 + this.orbsCollected * 10) * (this.gameMode === 'boss_rush' ? 1.5 : 1.0));
+
+      storage.recordSectorClear(this.currentSectorIndex, starsEarned, this.levelTime, finalScore, baseBits);
+      this.hud.updateBitsDisplay();
+    } catch (e) {
+      console.warn('[Victory] progress recording error:', e);
     }
-    this.spawnSummitFireworks();
 
-    setTimeout(() => {
-      this.hud.showVictoryModal({
-        sector: this.currentSector,
-        stars: starsEarned,
-        time: this.levelTime,
-        score: finalScore,
-        bitsEarned: baseBits,
-        onNext: () => {
-          crazyGames.requestMidgameAd(() => {
-            const next = Math.min(15, this.currentSectorIndex + 1);
-            this.loadSector(next);
-          });
-        },
-        onRetry: () => {
-          this.restartLevel();
-        }
-      });
-    }, 600);
+    try { sound.playVictory(); } catch {}
+    if (starsEarned === 3) {
+      try { crazyGames.happyTime(); } catch {}
+    }
+    try { this.spawnSummitFireworks(); } catch {}
+
+    const showModal = () => {
+      try {
+        this.hud.showVictoryModal({
+          sector: this.currentSector,
+          stars: starsEarned,
+          time: this.levelTime,
+          score: finalScore,
+          bitsEarned: baseBits,
+          onNext: () => {
+            try {
+              crazyGames.requestMidgameAd(() => {
+                const next = Math.min(15, this.currentSectorIndex + 1);
+                this.loadSector(next);
+              });
+            } catch {
+              const next = Math.min(15, this.currentSectorIndex + 1);
+              this.loadSector(next);
+            }
+          },
+          onRetry: () => {
+            this.restartLevel();
+          }
+        });
+      } catch (err) {
+        console.error('[Victory] modal error:', err);
+      }
+    };
+
+    setTimeout(showModal, 250);
   }
 
   handleSectorDefeat() {
     if (this.isRoundOver) return;
     this.isRoundOver = true;
-    this.player.alive = false;
-    crazyGames.gameplayStop();
-    sound.playDefeat();
-    this.engine.camera.addTrauma(0.6);
+    if (this.player) this.player.alive = false;
 
-    setTimeout(() => {
-      this.hud.showDefeatModal({
-        sector: this.currentSector,
-        canRevive: !this.hasRevivedThisRound,
-        onRetry: () => {
-          crazyGames.requestMidgameAd(() => {
-            this.restartLevel();
-          });
-        },
-        onRevive: () => {
-          this.hasRevivedThisRound = true;
-          this.player.alive = true;
-          this.player.hasShield = true;
-          this.player.invulnerableTimer = 3.0;
-          this.player.y = this.currentSector.spawn.y;
-          this.player.x = this.currentSector.spawn.x;
-          this.player.vy = -350;
-          this.isRoundOver = false;
-          crazyGames.gameplayStart();
-        }
-      });
-    }, 450);
+    try { crazyGames.gameplayStop(); } catch (e) { console.warn(e); }
+    try { sound.playDefeat(); } catch (e) { console.warn(e); }
+    try { this.engine.camera.addTrauma(0.6); } catch (e) { console.warn(e); }
+
+    const showModal = () => {
+      try {
+        this.hud.showDefeatModal({
+          sector: this.currentSector,
+          canRevive: !this.hasRevivedThisRound,
+          onRetry: () => {
+            try {
+              crazyGames.requestMidgameAd(() => {
+                this.restartLevel();
+              });
+            } catch {
+              this.restartLevel();
+            }
+          },
+          onRevive: () => {
+            this.hasRevivedThisRound = true;
+            if (this.player) {
+              this.player.alive = true;
+              this.player.hasShield = true;
+              this.player.invulnerableTimer = 3.0;
+              this.player.y = this.currentSector.spawn.y;
+              this.player.x = this.currentSector.spawn.x;
+              this.player.vy = -350;
+            }
+            this.isRoundOver = false;
+            try { crazyGames.gameplayStart(); } catch {}
+          }
+        });
+      } catch (err) {
+        console.error('[Defeat] showDefeatModal error:', err);
+      }
+    };
+
+    setTimeout(showModal, 200);
   }
 
   spawnJumpParticles() {

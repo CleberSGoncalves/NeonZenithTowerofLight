@@ -271,39 +271,47 @@ class SoundEngine {
   }
 
   playVictory() {
-    this.ensureContext();
-    if (!this.ctx || this.isMuted || this.isAdMuted) return;
-    const t = this.ctx.currentTime;
-    const notes = [392.00, 523.25, 659.25, 783.99, 1046.50, 1318.51];
-    notes.forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, t + idx * 0.09);
-      gain.gain.setValueAtTime(0.28, t + idx * 0.09);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.09 + 0.7);
-      osc.connect(gain); gain.connect(this.sfxGain);
-      osc.start(t + idx * 0.09);
-      osc.stop(t + idx * 0.09 + 0.75);
-    });
+    try {
+      this.ensureContext();
+      if (!this.ctx || this.isMuted || this.isAdMuted) return;
+      const t = this.ctx.currentTime;
+      const notes = [392.00, 523.25, 659.25, 783.99, 1046.50, 1318.51];
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t + idx * 0.09);
+        gain.gain.setValueAtTime(0.28, t + idx * 0.09);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.09 + 0.7);
+        osc.connect(gain); gain.connect(this.sfxGain);
+        osc.start(t + idx * 0.09);
+        osc.stop(t + idx * 0.09 + 0.75);
+      });
+    } catch (e) {
+      console.warn('[Audio] playVictory error bypassed:', e);
+    }
   }
 
   playDefeat() {
-    this.ensureContext();
-    if (!this.ctx || this.isMuted || this.isAdMuted) return;
-    const t = this.ctx.currentTime;
-    const notes = [293.66, 277.18, 261.63, 220.00];
-    notes.forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, t + idx * 0.12);
-      gain.gain.setValueAtTime(0.22, t + idx * 0.12);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.12 + 0.4);
-      osc.connect(gain); gain.connect(this.sfxGain);
-      osc.start(t + idx * 0.12);
-      osc.stop(t + idx * 0.12 + 0.45);
-    });
+    try {
+      this.ensureContext();
+      if (!this.ctx || this.isMuted || this.isAdMuted) return;
+      const t = this.ctx.currentTime;
+      const notes = [293.66, 277.18, 261.63, 220.00];
+      notes.forEach((freq, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t + idx * 0.12);
+        gain.gain.setValueAtTime(0.22, t + idx * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.12 + 0.4);
+        osc.connect(gain); gain.connect(this.sfxGain);
+        osc.start(t + idx * 0.12);
+        osc.stop(t + idx * 0.12 + 0.45);
+      });
+    } catch (e) {
+      console.warn('[Audio] playDefeat error bypassed:', e);
+    }
   }
 
   playButtonClick() {

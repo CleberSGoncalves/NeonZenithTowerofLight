@@ -947,17 +947,23 @@ export class GameHUD {
         </div>
       `;
 
-      document.getElementById('btn-next-sector').onclick = () => {
-        sound.playButtonClick();
-        this.closeAll();
-        if (onNext) onNext();
-      };
+      const btnNext = document.getElementById('btn-next-sector');
+      if (btnNext) {
+        btnNext.onclick = () => {
+          sound.playButtonClick();
+          this.closeAll();
+          if (onNext) onNext();
+        };
+      }
 
-      document.getElementById('btn-retry-victory').onclick = () => {
-        sound.playButtonClick();
-        this.closeAll();
-        if (onRetry) onRetry();
-      };
+      const btnRetry = document.getElementById('btn-retry-victory');
+      if (btnRetry) {
+        btnRetry.onclick = () => {
+          sound.playButtonClick();
+          this.closeAll();
+          if (onRetry) onRetry();
+        };
+      }
 
       const doubleBtn = document.getElementById('btn-double-victory-reward');
       if (doubleBtn) {
@@ -977,11 +983,15 @@ export class GameHUD {
       }
     };
 
-    render();
-    this.modalStack.push({ type: 'victory', render });
-    this.currentModal = 'victory';
-    this.modalBackdrop.classList.remove('hidden');
-    if (this.callbacks.onModalOpen) this.callbacks.onModalOpen();
+    try {
+      render();
+      this.modalStack.push({ type: 'victory', render });
+      this.currentModal = 'victory';
+      if (this.modalBackdrop) this.modalBackdrop.classList.remove('hidden');
+      if (this.callbacks.onModalOpen) this.callbacks.onModalOpen();
+    } catch (err) {
+      console.error('[GameHUD] showVictoryModal error:', err);
+    }
   }
 
   // ── DEFEAT MODAL ──
@@ -1010,16 +1020,22 @@ export class GameHUD {
         </div>
       `;
 
-      document.getElementById('btn-retry-defeat').onclick = () => {
-        sound.playButtonClick();
-        this.closeAll();
-        if (onRetry) onRetry();
-      };
+      const btnRetry = document.getElementById('btn-retry-defeat');
+      if (btnRetry) {
+        btnRetry.onclick = () => {
+          sound.playButtonClick();
+          this.closeAll();
+          if (onRetry) onRetry();
+        };
+      }
 
-      document.getElementById('btn-select-defeat').onclick = () => {
-        sound.playButtonClick();
-        this.showSectorSelectModal();
-      };
+      const btnSelect = document.getElementById('btn-select-defeat');
+      if (btnSelect) {
+        btnSelect.onclick = () => {
+          sound.playButtonClick();
+          this.showSectorSelectModal();
+        };
+      }
 
       const reviveBtn = document.getElementById('btn-revive-shield');
       if (reviveBtn) {
@@ -1035,11 +1051,15 @@ export class GameHUD {
       }
     };
 
-    render();
-    this.modalStack.push({ type: 'defeat', render });
-    this.currentModal = 'defeat';
-    this.modalBackdrop.classList.remove('hidden');
-    if (this.callbacks.onModalOpen) this.callbacks.onModalOpen();
+    try {
+      render();
+      this.modalStack.push({ type: 'defeat', render });
+      this.currentModal = 'defeat';
+      if (this.modalBackdrop) this.modalBackdrop.classList.remove('hidden');
+      if (this.callbacks.onModalOpen) this.callbacks.onModalOpen();
+    } catch (err) {
+      console.error('[GameHUD] showDefeatModal error:', err);
+    }
   }
 
   // ── PAUSE MODAL ──
