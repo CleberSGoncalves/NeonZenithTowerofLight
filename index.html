@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Neon Zenith: Tower of Light - CrazyGames</title>
+    <meta
+      name="description"
+      content="Neon Zenith: Tower of Light — 3D Cyberpunk Parkour Obby. Scale vertical quantum data spires to restore the central core power. By FluidCleb Interactive for CrazyGames."
+    />
+    <meta name="theme-color" content="#020617" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+
+    <!-- Google Fonts: Montserrat & Rajdhani -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Rajdhani:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CrazyGames SDK v3 -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 3-ROW FLEX COLUMN CONTAINER -->
+      <div id="game-stage">
+        <!-- FAIXA 1: HUD TOP BAR (flex: 0 0 auto) -->
+        <header id="hud-top-bar" class="hud-top-bar">
+          <!-- Left: Sector Info & Stars Progress -->
+          <div class="hud-left-group">
+            <button class="hud-btn-pill" id="btn-sector-select" title="Sectors / Fases">
+              <span class="hud-pill-icon">⚡</span>
+              <span id="hud-sector-name">SECTOR 01</span>
+            </button>
+            <div class="hud-bits-badge">
+              <span class="hud-bits-icon">💎</span>
+              <span id="hud-bits-count">0</span>
+            </div>
+          </div>
+
+          <!-- Center: 3-Star Goal Live Progress Bar -->
+          <div class="hud-center-group">
+            <div class="star-tracker-bar-wrap">
+              <div class="star-tracker-bar">
+                <div class="star-tracker-fill" id="hud-star-fill" style="width: 0%;"></div>
+                <div class="star-milestone ms-1" id="star-ms-1" title="1★ Clear Sector">★</div>
+                <div class="star-milestone ms-2" id="star-ms-2" title="2★ Par Time">★</div>
+                <div class="star-milestone ms-3" id="star-ms-3" title="3★ All Orbs">★</div>
+              </div>
+              <div class="star-tracker-status" id="hud-star-status">
+                <span id="hud-star-info">Ascend: 0%</span>
+              </div>
+            </div>
+            <!-- Immediate 1-Star Completion Button -->
+            <button class="hud-btn-claim-star hidden" id="btn-claim-star-pass">
+              ✅ CONCLUIR FASE (★) ➔
+            </button>
+          </div>
+
+          <!-- Right: Score, Timer & Menu Drawer -->
+          <div class="hud-right-group">
+            <div class="hud-timer-badge">
+              <span class="hud-timer-icon">⏱</span>
+              <span id="hud-timer-text">00:00</span>
+            </div>
+            <div class="hud-score-badge">
+              <span id="hud-score-text">0 PTS</span>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="hud-desktop-actions">
+              <button class="hud-icon-btn" id="btn-toggle-sound" title="Sound Mute/Unmute" aria-label="Som">🔊</button>
+              <button class="hud-icon-btn" id="btn-open-shop" title="Quantum Shop" aria-label="Loja">🛍️</button>
+              <button class="hud-icon-btn" id="btn-open-spin" title="Lucky Spin" aria-label="Roleta">🎰</button>
+              <button class="hud-icon-btn" id="btn-open-quests" title="Quests" aria-label="Missões">📜</button>
+              <button class="hud-icon-btn" id="btn-open-daily" title="Daily Rewards" aria-label="Diário">🎁</button>
+              <button class="hud-icon-btn" id="btn-toggle-pause" title="Pause Game" aria-label="Pausar">⏸</button>
+            </div>
+
+            <!-- Mobile Drawer Button (☰) -->
+            <button class="hud-icon-btn hud-drawer-toggle" id="btn-drawer-toggle" aria-label="Menu">☰</button>
+          </div>
+
+          <!-- Mobile Collapsible Drawer Menu -->
+          <div class="hud-drawer-menu hidden" id="hud-drawer-menu">
+            <div class="hud-drawer-header">
+              <span id="drawer-header-title">⚡ TACTICAL MENU</span>
+              <button class="hud-drawer-close" id="btn-drawer-close">✕</button>
+            </div>
+            <div class="hud-drawer-grid">
+              <button class="drawer-btn" id="drawer-btn-sectors">🗺️ Sectors Map</button>
+              <button class="drawer-btn" id="drawer-btn-shop">🛍️ Quantum Shop</button>
+              <button class="drawer-btn" id="drawer-btn-spin">🎰 Lucky Spin</button>
+              <button class="drawer-btn" id="drawer-btn-quests">📜 Quests</button>
+              <button class="drawer-btn" id="drawer-btn-daily">🎁 Daily Rewards</button>
+              <button class="drawer-btn" id="drawer-btn-sound">🔊 Toggle Audio</button>
+              <button class="drawer-btn" id="drawer-btn-restart">🔄 Restart Sector</button>
+              <button class="drawer-btn" id="drawer-btn-lang">🌐 Language (EN/PT)</button>
+            </div>
+          </div>
+        </header>
+
+        <!-- FAIXA 2: CANVAS WRAP (flex: 1 1 auto; min-height: 0) -->
+        <main id="canvas-wrap" class="canvas-wrap">
+          <canvas id="game-canvas"></canvas>
+          <!-- In-Game floating notifications / Combo alerts -->
+          <div id="game-floating-notifs" class="game-floating-notifs"></div>
+        </main>
+
+        <!-- FAIXA 3: HUD BOTTOM BAR (flex: 0 0 auto) -->
+        <footer id="hud-bottom-bar" class="hud-bottom-bar">
+          <!-- Mobile Touch Controls -->
+          <div class="touch-controls-container" id="touch-controls">
+            <!-- Left Cluster: Virtual Joystick / D-Pad -->
+            <div class="touch-cluster-left">
+              <div class="touch-dpad">
+                <button class="dpad-btn dpad-left" id="touch-left" aria-label="Mover Esquerda">◀</button>
+                <button class="dpad-btn dpad-right" id="touch-right" aria-label="Mover Direita">▶</button>
+              </div>
+            </div>
+
+            <!-- Center: Shield / Dash Indicators -->
+            <div class="touch-status-center">
+              <div class="shield-indicator" id="hud-shield-indicator" title="Shield Status">
+                <span class="shield-icon">🛡️</span>
+                <span class="shield-text" id="hud-shield-text">READY</span>
+              </div>
+              <div class="dash-cooldown-bar" title="Dash Recharge">
+                <div class="dash-fill" id="hud-dash-fill" style="width: 100%;"></div>
+              </div>
+            </div>
+
+            <!-- Right Cluster: Action Buttons (Jump & Cyber Dash) -->
+            <div class="touch-cluster-right">
+              <button class="action-btn action-dash" id="touch-dash" aria-label="Cyber Dash">
+                <span class="action-icon">⚡</span>
+                <span class="action-label">DASH</span>
+              </button>
+              <button class="action-btn action-jump" id="touch-jump" aria-label="Jump">
+                <span class="action-icon">▲</span>
+                <span class="action-label">JUMP</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Discrete Official Platform Footer Link -->
+          <div class="hud-official-footer">
+            <span>Neon Zenith: Tower of Light</span>
+            <span class="footer-separator">•</span>
+            <a href="https://kinomuse.com.br" target="_blank" rel="noopener noreferrer" class="footer-brand-link">
+              kinomuse.com.br
+            </a>
+          </div>
+        </footer>
+      </div>
+
+      <!-- MODAL BACKDROP & DIALOGS -->
+      <div id="hud-modal" class="hud-modal-backdrop hidden">
+        <div id="hud-modal-content" class="hud-modal-box"></div>
+      </div>
+    </div>
+
+    <!-- Main Game Script -->
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

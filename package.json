@@ -1,0 +1,15 @@
+{
+  "name": "neonzenithtoweroflight",
+  "version": "1.0.0",
+  "description": "Neon Zenith: Tower of Light — 3D Cyberpunk Parkour Obby | CrazyGames HTML5",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.8"
+  }
+}
