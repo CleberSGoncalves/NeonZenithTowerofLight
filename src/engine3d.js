@@ -159,7 +159,7 @@ export class Engine3D {
     return { x: sx, y: sy };
   }
 
-  render(sector, player, particles, dt) {
+  render(sector, player, particles, dt, boss = null, bossBullets = [], healOrbs = []) {
     this.time += dt;
     const width = this.viewWidth;
     const height = this.viewHeight;
@@ -265,6 +265,21 @@ export class Engine3D {
       }
     }
 
+    // 7b. Render Emergency Heal Orbs (Adaptive Difficulty)
+    if (healOrbs && healOrbs.length > 0) {
+      for (const orb of healOrbs) {
+        if (!orb.collected) this.renderHealOrb(ctx, orb, width, height);
+      }
+    }
+
+    // 7c. Render Boss & Spiral Bullets (Boss Rush Mode)
+    if (boss && boss.hp > 0) {
+      this.renderBoss(ctx, boss, width, height);
+    }
+    if (bossBullets && bossBullets.length > 0) {
+      this.renderBossBullets(ctx, bossBullets, width, height);
+    }
+
     // 8. Render Summit Quantum Core
     if (sector && sector.summitCore) {
       this.renderSummitCore(ctx, sector.summitCore, width, height);
@@ -281,6 +296,77 @@ export class Engine3D {
     }
 
     ctx.restore();
+  }
+
+  // ── EMERGENCY HEAL ORB RENDERING ──
+  renderHealOrb(ctx, orb, viewW, viewH) {
+    const bob = Math.sin(this.time * 5 + (orb.x || 0)) * 5;
+    const p = this.toScreen(orb.x, orb.y - bob, orb.z || 0, this.camera.x, this.camera.y, viewW, viewH);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.fillStyle = '#10b981';
+    ctx.shadowColor = '#10b981';
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.arc(0, 0, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-2, -7, 4, 14);
+    ctx.fillRect(-7, -2, 14, 4);
+    ctx.restore();
+  }
+
+  // ── BOSS RENDERING (BOSS RUSH MODE) ──
+  renderBoss(ctx, boss, viewW, viewH) {
+    const p = this.toScreen(boss.x, boss.y, boss.z || 0, this.camera.x, this.camera.y, viewW, viewH);
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    
+    // Outer floating aura
+    ctx.fillStyle = 'rgba(236, 72, 153, 0.25)';
+    ctx.beginPath();
+    ctx.arc(0, 0, 50 + Math.sin(this.time * 6) * 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cyber Boss Body
+    ctx.fillStyle = '#1e112a';
+    ctx.strokeStyle = '#ec4899';
+    ctx.lineWidth = 3;
+    drawRoundedRect(ctx, -38, -38, 76, 76, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    // Glowing central core
+    ctx.fillStyle = '#00f5ff';
+    ctx.shadowColor = '#00f5ff';
+    ctx.shadowBlur = 18;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Boss Health Bar
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(-45, -55, 90, 8);
+    const hpPct = Math.max(0, boss.hp / boss.maxHp);
+    ctx.fillStyle = '#ec4899';
+    ctx.fillRect(-44, -54, 88 * hpPct, 6);
+    ctx.restore();
+  }
+
+  // ── BOSS SPIRAL BULLETS ──
+  renderBossBullets(ctx, bullets, viewW, viewH) {
+    for (const b of bullets) {
+      const p = this.toScreen(b.x, b.y, b.z || 0, this.camera.x, this.camera.y, viewW, viewH);
+      ctx.save();
+      ctx.fillStyle = '#ec4899';
+      ctx.shadowColor = '#ec4899';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, b.radius || 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   // ── PLATFORM 3D RENDERING WITH STRICT ANTI-NAN GUARDS ──

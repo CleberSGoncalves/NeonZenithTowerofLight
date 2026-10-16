@@ -1,0 +1,178 @@
+{
+  "project": "NeonZenithTowerofLight",
+  "genre": "survivors",
+  "engine": "Godot 4.7.2",
+  "created_at": 1792123096.6952746,
+  "updated_at": 1792123665.0,
+  "items": [
+    {
+      "id": "dash_ability",
+      "category": "mechanics",
+      "category_label": "Nova Mecânica",
+      "icon": "⚡",
+      "badge_color": "rose",
+      "title": "Esquiva Rápida (Dash) com Rastro Neon",
+      "description": "Permite ao jogador pressionar Shift no PC ou botão 'DASH' no celular para dar um impulso rápido com 0.3s de invulnerabilidade e rastro de partículas neon. Cooldown de 1.5s.",
+      "target_files": [
+        "scripts/player.gd",
+        "scenes/player.tscn",
+        "src/game.js"
+      ],
+      "difficulty": "Médio",
+      "impact": "⭐️⭐️⭐️⭐️⭐️ Aumenta drasticamente a sensação de controle e habilidade do jogador (+25% Retenção).",
+      "status": "ready",
+      "implemented_at": null,
+      "is_new": false
+    },
+    {
+      "id": "triple_shot",
+      "category": "mechanics",
+      "category_label": "Nova Mecânica",
+      "icon": "🎯",
+      "badge_color": "amber",
+      "title": "Disparo Triplo & Mira Assistida",
+      "description": "Adiciona disparos automáticos de projéteis luminosos na direção dos inimigos mais próximos, disparando 3 feixes em cone a cada 0.6s.",
+      "target_files": [
+        "scripts/player.gd",
+        "scripts/bullet.gd",
+        "scenes/bullet.tscn"
+      ],
+      "difficulty": "Médio",
+      "impact": "⭐️⭐️⭐️⭐️⭐️ Mecânica core de Survivors que eleva o ritmo e o visual da partida.",
+      "status": "ready",
+      "implemented_at": null,
+      "is_new": false
+    },
+    {
+      "id": "endless_boss_rush",
+      "category": "modes",
+      "category_label": "Novo Modo de Jogo",
+      "icon": "👹",
+      "badge_color": "red",
+      "title": "Modo Boss Rush & Invasão Contínua",
+      "description": "Novo modo acessível no menu inicial onde chefões aparecem a cada 60 segundos com padrões de ataque em espiral e multiplicador de pontuação crescente.",
+      "target_files": [
+        "scripts/game_manager.gd",
+        "scenes/boss.tscn",
+        "scripts/hud.gd"
+      ],
+      "difficulty": "Alto",
+      "impact": "🔥 +40% tempo de jogo para jogadores veteranos e fãs de desafio.",
+      "status": "implemented",
+      "implemented_at": 1792123665.0,
+      "is_new": false,
+      "updated_at": 1792123665.0
+    },
+    {
+      "id": "neon_catacombs_map",
+      "category": "maps",
+      "category_label": "Novos Mapas & Temas",
+      "icon": "🗺️",
+      "badge_color": "purple",
+      "title": "Novo Mapa: Catacumbas Subterrâneas Neon",
+      "description": "Adiciona um segundo mapa selecionável com paredes de labirinto, obstáculos destrutíveis e iluminação 2D dinâmica (PointLight2D) com névoa volumétrica.",
+      "target_files": [
+        "scenes/maps/catacombs.tscn",
+        "scripts/map_loader.gd"
+      ],
+      "difficulty": "Médio",
+      "impact": "✨ Dobra a variedade visual do jogo e incentiva o replay.",
+      "status": "ready",
+      "implemented_at": null,
+      "is_new": false
+    },
+    {
+      "id": "adaptive_difficulty",
+      "category": "balance",
+      "category_label": "Balanceamento & Dificuldade",
+      "icon": "⚖️",
+      "badge_color": "blue",
+      "title": "Dificuldade Adaptativa & Curva Suave",
+      "description": "Calibra o spawn de inimigos com taxa adaptativa: se o jogador estiver com vida cheia, o ritmo acelera 15%; se a vida cair abaixo de 30%, solta orbes de cura emergenciais.",
+      "target_files": [
+        "scripts/spawner.gd",
+        "scripts/game_manager.gd"
+      ],
+      "difficulty": "Baixo",
+      "impact": "📈 Reduz a taxa de desistência nos primeiros 3 minutos em mais de 30%.",
+      "status": "implemented",
+      "implemented_at": 1792123665.0,
+      "is_new": false,
+      "updated_at": 1792123665.0
+    },
+    {
+      "id": "menu_cards_3stars",
+      "category": "menu",
+      "category_label": "Aprimoramento do Menu",
+      "icon": "🏆",
+      "badge_color": "cyan",
+      "title": "Menu de Fases com Cards de 3 Estrelas & Progresso",
+      "description": "Substitui a seleção básica por cards visuais responsivos em Grid com preview do mapa, metas claras de 1★, 2★ e 3★ e persistência de pontuação no LocalStorage.",
+      "target_files": [
+        "scenes/level_select.tscn",
+        "scripts/level_select.gd",
+        "src/hud.js"
+      ],
+      "difficulty": "Médio",
+      "impact": "⭐️⭐️⭐️⭐️⭐️ Conformidade total com a Regra 10 e padrão CrazyGames.",
+      "status": "implemented",
+      "implemented_at": 1792123665.0,
+      "is_new": false,
+      "updated_at": 1792123665.0
+    },
+    {
+      "id": "daily_rewards_calendar",
+      "category": "rewards",
+      "category_label": "Meta-Game & Recompensas",
+      "icon": "🎁",
+      "badge_color": "emerald",
+      "title": "Recompensa Diária de Login (7 Dias)",
+      "description": "Modal animado no início com calendário de 7 dias de prêmios crescentes (moedas, skins, multiplicadores), salvo no user://save.json.",
+      "target_files": [
+        "scripts/daily_rewards.gd",
+        "scenes/daily_rewards.tscn"
+      ],
+      "difficulty": "Médio",
+      "impact": "⭐️⭐️⭐️⭐️⭐️ Aumenta a retenção D1 e D7 (jogadores voltam todo dia para coletar).",
+      "status": "ready",
+      "implemented_at": null,
+      "is_new": false
+    },
+    {
+      "id": "haptic_and_sound_polish",
+      "category": "polish",
+      "category_label": "Polimento de Áudio & Vibração",
+      "icon": "🔊",
+      "badge_color": "teal",
+      "title": "Sons Sintetizados Procedurais & Vibração Háptica",
+      "description": "Implementa AudioStreamPlayer com escala pentatônica harmônica para cliques e vitórias, e vibração háptica no celular (navigator.vibrate).",
+      "target_files": [
+        "scripts/sound_manager.gd",
+        "src/sound.js"
+      ],
+      "difficulty": "Baixo",
+      "impact": "✨ Dá sensação de produto acabado e comercial de alto nível.",
+      "status": "ready",
+      "implemented_at": null,
+      "is_new": false
+    },
+    {
+      "id": "cosmetic_skins_shop",
+      "category": "shop",
+      "category_label": "Loja de Cosméticos & Skins",
+      "icon": "🎨",
+      "badge_color": "purple",
+      "title": "Loja de Skins com Desbloqueio por Moedas ou Anúncio",
+      "description": "Menu de loja com 6 visuais/paletas desbloqueáveis usando moedas conquistadas ou instantaneamente com um Rewarded Ad da CrazyGames.",
+      "target_files": [
+        "scenes/shop.tscn",
+        "scripts/shop.gd"
+      ],
+      "difficulty": "Médio",
+      "impact": "💰 Converte moedas virtuais em engajamento e cliques em anúncios recompensados.",
+      "status": "ready",
+      "implemented_at": null,
+      "is_new": false
+    }
+  ]
+}

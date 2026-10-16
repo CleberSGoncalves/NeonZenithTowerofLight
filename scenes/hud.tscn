@@ -1,0 +1,127 @@
+[gd_scene load_steps=2 format=3 uid="uid://hud_scene_01"]
+
+[ext_resource type="Script" path="res://scripts/hud.gd" id="1_hud"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ScoreLabel" type="Label" parent="MarginContainer/VBoxContainer/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "Pontuação: 0"
+
+[node name="MuteButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow"]
+custom_minimum_size = Vector2(40, 32)
+layout_mode = 2
+text = "[>]"
+
+[node name="PauseButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow"]
+custom_minimum_size = Vector2(40, 32)
+layout_mode = 2
+text = "II"
+
+[node name="HealthBar" type="ProgressBar" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(220, 22)
+layout_mode = 2
+value = 100.0
+
+[node name="GameOverPanel" type="Panel" parent="."]
+process_mode = 3
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -90.0
+offset_right = 160.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="Label" type="Label" parent="GameOverPanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 24.0
+offset_bottom = 54.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 24
+text = "FIM DE JOGO"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="GameOverPanel"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = -54.0
+offset_right = -40.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Reiniciar Partida"
+
+[node name="PausePanel" type="Panel" parent="."]
+process_mode = 3
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -90.0
+offset_right = 160.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="Label" type="Label" parent="PausePanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 24.0
+offset_bottom = 54.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 24
+text = "JOGO PAUSADO"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="PausePanel"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+offset_left = 40.0
+offset_top = -54.0
+offset_right = -40.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Continuar Partida"
+
+[connection signal="pressed" from="MarginContainer/VBoxContainer/TopRow/MuteButton" to="." method="_on_mute_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/TopRow/PauseButton" to="." method="_on_pause_button_pressed"]
+[connection signal="pressed" from="GameOverPanel/RestartButton" to="." method="_on_restart_button_pressed"]
+[connection signal="pressed" from="PausePanel/ResumeButton" to="." method="_on_resume_button_pressed"]

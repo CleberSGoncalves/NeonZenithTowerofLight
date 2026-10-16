@@ -8,6 +8,7 @@ import { i18n } from './i18n.js';
 import { sound } from './audio.js';
 import { storage } from './storage.js';
 import { crazyGames } from './crazygames.js';
+import { sectors } from './levels.js';
 
 export class GameHUD {
   constructor(callbacks) {
@@ -190,9 +191,15 @@ export class GameHUD {
     this.updateBitsDisplay();
   }
 
-  updateHUD(sector, player, elapsedSec, score) {
+  updateHUD(sector, player, elapsedSec, score, boss = null, gameMode = 'standard', bossTimer = 0, scoreMultiplier = 1.0, adaptiveRate = 1.0) {
     if (this.sectorNameEl && sector) {
-      this.sectorNameEl.textContent = `${i18n.t('sector')} ${sector.id < 10 ? '0' + sector.id : sector.id}`;
+      if (gameMode === 'boss_rush') {
+        const nextBossIn = Math.max(0, 60 - bossTimer);
+        this.sectorNameEl.textContent = boss ? `👹 BOSS: ${boss.hp}/${boss.maxHp}` : `👹 RUSH • ${nextBossIn.toFixed(0)}s (x${scoreMultiplier.toFixed(1)})`;
+      } else {
+        const pacingText = adaptiveRate > 1.0 ? ' ⚡+15%' : (adaptiveRate < 1.0 ? ' 💚EMERGENCY' : '');
+        this.sectorNameEl.textContent = `${i18n.t('sector')} ${sector.id < 10 ? '0' + sector.id : sector.id}${pacingText}`;
+      }
     }
 
     if (this.timerTextEl) {
@@ -202,7 +209,8 @@ export class GameHUD {
     }
 
     if (this.scoreTextEl) {
-      this.scoreTextEl.textContent = `${score} PTS`;
+      const multText = scoreMultiplier > 1.0 ? ` (x${scoreMultiplier.toFixed(1)})` : '';
+      this.scoreTextEl.textContent = `${score} PTS${multText}`;
     }
 
     if (player && this.shieldIndicator && this.shieldText) {
@@ -295,37 +303,88 @@ export class GameHUD {
     this.modalBackdrop.classList.add('hidden');
   }
 
-  // ── SECTOR SELECT MODAL ──
+  // ── SECTOR SELECT MODAL (3-STAR CARDS & BOSS RUSH TOGGLE) ──
   showSectorSelectModal() {
     const render = () => {
       const unlocked = storage.getUnlockedSector();
+      const isBossRush = this.callbacks.getGameMode ? (this.callbacks.getGameMode() === 'boss_rush') : false;
+      const totalStars = storage.getTotalStars();
       let cardsHtml = '';
 
       for (let i = 1; i <= 15; i++) {
         const isLocked = i > unlocked;
         const stars = storage.getSectorStars(i);
+        const bestTime = storage.data.sectorBestTimes[i] || 9999;
+        const secCfg = sectors.find(s => s.id === i) || { name: `Setor ${i}`, parTime: 30, orbCount: 6, difficulty: 'Normal' };
         const starsIcons = [1, 2, 3].map(s => `<span class="${s <= stars ? 'star-gold' : ''}">★</span>`).join('');
 
+        // Preview gradient theme based on difficulty
+        const previewGradients = [
+          'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+          'linear-gradient(135deg, #0f766e 0%, #047857 100%)',
+          'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+          'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)'
+        ];
+        const grad = previewGradients[(i - 1) % 4];
+
         cardsHtml += `
-          <div class="sector-card ${isLocked ? 'locked' : ''}" data-sector="${i}">
-            <div class="sector-card-num">${i18n.t('sector')} ${i < 10 ? '0' + i : i}</div>
-            <div class="sector-card-stars">${starsIcons}</div>
+          <div class="sector-card ${isLocked ? 'locked' : ''}" data-sector="${i}" style="min-width: 140px;">
+            <div style="width: 100%; height: 38px; border-radius: 8px; background: ${isLocked ? '#1e293b' : grad}; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+              ${isLocked ? '🔒' : (isBossRush ? '👹' : '⚡')}
+            </div>
+            <div class="sector-card-num" style="font-size: 13px; font-weight: 900; margin-top: 4px;">
+              S${i < 10 ? '0' + i : i}: ${secCfg.name}
+            </div>
+            <div class="sector-card-stars" style="font-size: 16px;">${starsIcons}</div>
+            <div style="font-size: 10px; color: #94a3b8; text-align: center; line-height: 1.3;">
+              <div>1★ Cume • 2★ &lt;${secCfg.parTime}s</div>
+              <div>3★ ${secCfg.orbCount} Orbes</div>
+            </div>
+            <div style="font-size: 11px; font-weight: 800; color: #facc15; margin-top: 2px;">
+              ${bestTime < 9000 ? `⏱ Record: ${bestTime}s` : '⏱ Sem Recorde'}
+            </div>
+            <button class="btn-primary-action" style="padding: 4px 10px; font-size: 11px; margin-top: 4px; width: 100%;" ${isLocked ? 'disabled' : ''}>
+              ${isLocked ? 'BLOQUEADO' : 'JOGAR ➔'}
+            </button>
           </div>
         `;
       }
 
       this.modalContent.innerHTML = `
         <div class="modal-header-row">
-          <span class="modal-title">🗺️ ${i18n.t('sectors_title')}</span>
+          <div>
+            <span class="modal-title">🗺️ ${i18n.t('sectors_title')}</span>
+            <div style="font-size: 12px; color: #facc15; font-weight: 800;">
+              Total de Estrelas: ${totalStars} / 45 ★
+            </div>
+          </div>
           <button class="modal-close-btn" id="modal-close-x">✕</button>
         </div>
-        <div class="sector-cards-grid">${cardsHtml}</div>
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <button class="btn-primary-action" id="btn-toggle-boss-rush" style="flex: 1; padding: 8px; font-size: 13px; background: ${isBossRush ? 'linear-gradient(135deg, #ef4444, #991b1b)' : 'linear-gradient(135deg, #0284c7, #00f5ff)'}; color: #fff;">
+            Modo: ${isBossRush ? '👹 BOSS RUSH (Invasão 60s)' : '⚡ MODO NORMAL'}
+          </button>
+        </div>
+        <div class="sector-cards-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-height: 52vh; overflow-y: auto;">
+          ${cardsHtml}
+        </div>
       `;
 
       document.getElementById('modal-close-x').onclick = () => {
         sound.playButtonClick();
         this.closeModal();
       };
+
+      const bossToggleBtn = document.getElementById('btn-toggle-boss-rush');
+      if (bossToggleBtn) {
+        bossToggleBtn.onclick = () => {
+          sound.playButtonClick();
+          if (this.callbacks.onToggleGameMode) {
+            this.callbacks.onToggleGameMode();
+          }
+          render();
+        };
+      }
 
       this.modalContent.querySelectorAll('.sector-card:not(.locked)').forEach((card) => {
         card.onclick = () => {

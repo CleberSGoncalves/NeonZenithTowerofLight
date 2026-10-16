@@ -1,7 +1,8 @@
 /**
  * @fileoverview Central Game Coordinator for Neon Zenith: Tower of Light
  * Fixed Timestep Accumulator (60Hz/144Hz/165Hz consistency), Anti-Softlock State Guard,
- * Dynamic Dash Trails, Swept Laser Collision, and Quests Tracking.
+ * Boss Rush Mode (60s spawn & spiral bullets), Adaptive Difficulty & Curva Suave,
+ * and 3-Star Cards Level Select Integration.
  */
 
 import { sectors } from './levels.js';
@@ -16,6 +17,19 @@ export class GameController {
   constructor(canvas) {
     this.canvas = canvas;
     this.engine = new Engine3D(canvas);
+
+    // Game Mode: 'standard' or 'boss_rush'
+    this.gameMode = 'standard';
+    this.bossRushTimer = 0.0;
+    this.bossWaveIndex = 0;
+    this.scoreMultiplier = 1.0;
+    this.activeBoss = null;
+    this.bossBullets = [];
+    this.healOrbs = [];
+
+    // Adaptive Difficulty
+    this.adaptiveRate = 1.0;
+    this.emergencyCooldown = 0.0;
 
     // Game state flags
     this.currentSectorIndex = storage.getUnlockedSector();
@@ -55,6 +69,8 @@ export class GameController {
       onRestartLevel: () => this.restartLevel(),
       onSelectSector: (id) => this.loadSector(id),
       onClaimStarPass: () => this.handleClaimStarPass(),
+      onToggleGameMode: () => this.toggleGameMode(),
+      getGameMode: () => this.gameMode,
       onModalOpen: () => {
         this.isPaused = true;
         crazyGames.gameplayStop();
@@ -82,6 +98,16 @@ export class GameController {
 
     this.setupKeyboard();
     this.loadSector(this.currentSectorIndex);
+  }
+
+  toggleGameMode() {
+    this.gameMode = this.gameMode === 'standard' ? 'boss_rush' : 'standard';
+    this.bossRushTimer = 0.0;
+    this.bossWaveIndex = 0;
+    this.scoreMultiplier = this.gameMode === 'boss_rush' ? 1.2 : 1.0;
+    this.activeBoss = null;
+    this.bossBullets = [];
+    this.restartLevel();
   }
 
   setupKeyboard() {
@@ -130,6 +156,47 @@ export class GameController {
       this.spawnDashTrail();
       // Track Air Dashes Quest (Daily 2)
       storage.addQuestProgress('daily2', 1);
+
+      // Dash attack into active boss
+      if (this.activeBoss && this.activeBoss.hp > 0) {
+        const dist = Math.hypot(this.player.x - this.activeBoss.x, this.player.y - this.activeBoss.y);
+        if (dist < 65) {
+          this.damageBoss(120);
+        }
+      }
+    }
+  }
+
+  damageBoss(amount) {
+    if (!this.activeBoss || this.activeBoss.hp <= 0) return;
+    this.activeBoss.hp -= amount;
+    sound.playLaserHit();
+    this.engine.camera.addTrauma(0.4);
+    this.triggerHitStop(50);
+
+    if (this.activeBoss.hp <= 0) {
+      // Boss Defeated!
+      sound.playStarMilestone();
+      this.score += Math.floor(1500 * this.scoreMultiplier);
+      this.scoreMultiplier += 0.5;
+
+      // Spawn celebration particles and heal orbs
+      this.spawnSummitFireworks();
+      this.healOrbs.push({
+        x: this.activeBoss.x - 20,
+        y: this.activeBoss.y,
+        z: this.activeBoss.z,
+        collected: false
+      });
+      this.healOrbs.push({
+        x: this.activeBoss.x + 20,
+        y: this.activeBoss.y,
+        z: this.activeBoss.z,
+        collected: false
+      });
+
+      this.activeBoss = null;
+      this.bossBullets = [];
     }
   }
 
@@ -153,13 +220,19 @@ export class GameController {
     this.score = 0;
     this.orbsCollected = 0;
     this.particles = [];
+    this.healOrbs = [];
+    this.bossBullets = [];
+    this.activeBoss = null;
+    this.bossRushTimer = 0.0;
+    this.emergencyCooldown = 0.0;
+    this.adaptiveRate = 1.0;
 
     const startPos = this.currentSector.spawn;
     this.player = physics.createPlayer(startPos.x, startPos.y, startPos.z);
     this.player.skin = storage.data.skins.equipped || 'classic';
     this.player.hasShield = (storage.data.upgrades.shield || 1) >= 2;
 
-    this.hud.updateHUD(this.currentSector, this.player, 0, 0);
+    this.hud.updateHUD(this.currentSector, this.player, 0, 0, null, this.gameMode, 0, this.scoreMultiplier, 1.0);
     this.hud.updateStarProgress(0, this.currentSector.orbs.length, 0, this.currentSector.parTime, false);
     crazyGames.gameplayStart();
   }
@@ -196,8 +269,8 @@ export class GameController {
     );
 
     const timeBonus = Math.max(0, Math.floor((this.currentSector.parTime - this.levelTime) * 15));
-    const finalScore = this.score + 500 + timeBonus + starsEarned * 200;
-    const baseBits = 50 + starsEarned * 30 + this.orbsCollected * 10;
+    const finalScore = Math.floor((this.score + 500 + timeBonus + starsEarned * 200) * this.scoreMultiplier);
+    const baseBits = Math.floor((50 + starsEarned * 30 + this.orbsCollected * 10) * (this.gameMode === 'boss_rush' ? 1.5 : 1.0));
 
     storage.recordSectorClear(this.currentSectorIndex, starsEarned, this.levelTime, finalScore, baseBits);
     this.hud.updateBitsDisplay();
@@ -275,7 +348,6 @@ export class GameController {
   }
 
   spawnDashTrail() {
-    // Dynamic color from equipped trail
     const trailColors = {
       cyan: '#00f5ff',
       magenta: '#ec4899',
@@ -313,7 +385,7 @@ export class GameController {
   }
 
   spawnSummitFireworks() {
-    const core = this.currentSector.summitCore;
+    const core = this.currentSector ? this.currentSector.summitCore : { x: 0, y: 0, z: 0 };
     for (let i = 0; i < 40; i++) {
       this.particles.push({
         x: core.x + (Math.random() - 0.5) * 150,
@@ -331,7 +403,6 @@ export class GameController {
   update(rawDt) {
     if (this.isPaused || this.isAdPaused || this.isHitStopped) return;
 
-    // Cap maximum frame delay to prevent spiral of death
     const clampedDt = Math.min(0.05, rawDt);
     this.physicsAccumulator += clampedDt;
 
@@ -346,6 +417,143 @@ export class GameController {
 
     this.levelTime += dt;
 
+    // ── DIFICULDADE ADAPTATIVA & CURVA SUAVE ──
+    if (this.player.hasShield) {
+      // Jogador com vida/escudo cheios: acelera o ritmo em 15%
+      this.adaptiveRate = 1.15;
+    } else {
+      // Escudo rompido (risco crítico): alivia o ritmo e solta orbe de cura emergencial
+      this.adaptiveRate = 0.85;
+      this.emergencyCooldown -= dt;
+      if (this.emergencyCooldown <= 0.0) {
+        this.emergencyCooldown = 15.0; // Intervalo de segurança
+        // Spawna orbe de reparo na posição atual do jogador
+        this.healOrbs.push({
+          x: this.player.x + (Math.random() > 0.5 ? 90 : -90),
+          y: this.player.y - 30,
+          z: this.player.z,
+          collected: false
+        });
+      }
+    }
+
+    // ── MODO BOSS RUSH & INVASÃO CONTÍNUA ──
+    if (this.gameMode === 'boss_rush') {
+      this.bossRushTimer += dt;
+      // Chefão aparece a cada 60 segundos
+      if (this.bossRushTimer >= 60.0 && !this.activeBoss) {
+        this.bossRushTimer = 0.0;
+        this.bossWaveIndex++;
+        this.scoreMultiplier += 0.5;
+
+        // Spawn do Boss Quântico
+        this.activeBoss = {
+          x: this.player.x + 50,
+          y: this.player.y - 140,
+          z: this.player.z,
+          maxHp: 400 + this.bossWaveIndex * 150,
+          hp: 400 + this.bossWaveIndex * 150,
+          spiralAngle: 0,
+          attackTimer: 0,
+          moveDir: 1,
+          speed: 95
+        };
+        sound.playLaserHit();
+        this.engine.camera.addTrauma(0.5);
+      }
+
+      // Atualiza Chefão e ataque em espiral
+      if (this.activeBoss && this.activeBoss.hp > 0) {
+        this.activeBoss.x += this.activeBoss.moveDir * this.activeBoss.speed * dt;
+        if (Math.abs(this.activeBoss.x - this.player.x) > 220) {
+          this.activeBoss.moveDir = (this.player.x > this.activeBoss.x) ? 1 : -1;
+        }
+
+        this.activeBoss.spiralAngle += 150 * dt;
+        this.activeBoss.attackTimer += dt;
+
+        // Disparo em espiral dupla a cada 0.3s
+        if (this.activeBoss.attackTimer >= 0.3) {
+          this.activeBoss.attackTimer = 0.0;
+          const rad = (this.activeBoss.spiralAngle * Math.PI) / 180;
+          const spd = 210;
+          this.bossBullets.push({
+            x: this.activeBoss.x,
+            y: this.activeBoss.y,
+            z: this.activeBoss.z,
+            vx: Math.cos(rad) * spd,
+            vy: Math.sin(rad) * spd,
+            radius: 6,
+            life: 5.0
+          });
+          this.bossBullets.push({
+            x: this.activeBoss.x,
+            y: this.activeBoss.y,
+            z: this.activeBoss.z,
+            vx: -Math.cos(rad) * spd,
+            vy: -Math.sin(rad) * spd,
+            radius: 6,
+            life: 5.0
+          });
+        }
+
+        // Pular em cima do Boss dá dano ao Boss
+        const distBoss = Math.hypot(this.player.x - this.activeBoss.x, this.player.y - this.activeBoss.y);
+        if (distBoss < 48 && this.player.vy > 0) {
+          this.player.vy = -600; // Bounce off boss
+          this.damageBoss(100);
+        }
+      }
+
+      // Atualiza Projéteis do Boss
+      for (let i = this.bossBullets.length - 1; i >= 0; i--) {
+        const b = this.bossBullets[i];
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        b.life -= dt;
+
+        // Colisão com o jogador
+        if (this.player.alive && this.player.invulnerableTimer <= 0) {
+          const distToPlayer = Math.hypot(this.player.x - b.x, (this.player.y - 15) - b.y);
+          if (distToPlayer < 18) {
+            this.bossBullets.splice(i, 1);
+            if (this.player.hasShield) {
+              this.player.hasShield = false;
+              this.player.invulnerableTimer = 1.5;
+              sound.playShieldBreak();
+              this.engine.camera.addTrauma(0.4);
+              this.triggerHitStop(50);
+            } else {
+              sound.playLaserHit();
+              this.handleSectorDefeat();
+              return;
+            }
+            continue;
+          }
+        }
+
+        if (b.life <= 0) {
+          this.bossBullets.splice(i, 1);
+        }
+      }
+    }
+
+    // ── COLETA DE ORBES DE REPARO / CURA EMERGENCIAL ──
+    for (let i = this.healOrbs.length - 1; i >= 0; i--) {
+      const orb = this.healOrbs[i];
+      if (!orb.collected) {
+        const distToOrb = Math.hypot(this.player.x - orb.x, (this.player.y - 15) - orb.y);
+        if (distToOrb < 30) {
+          orb.collected = true;
+          this.player.hasShield = true;
+          this.score += 50;
+          sound.playStarMilestone();
+          this.healOrbs.splice(i, 1);
+        }
+      }
+    }
+
+    // Controles e Física
     let moveX = this.touchInput.moveX;
     if (this.keys['KeyA'] || this.keys['ArrowLeft']) moveX -= 1;
     if (this.keys['KeyD'] || this.keys['ArrowRight']) moveX += 1;
@@ -354,15 +562,15 @@ export class GameController {
     const prevY = this.player.y;
 
     const speedBonus = storage.data.upgrades.speed || 1;
-    physics.update(this.player, this.currentSector, this.input, dt, speedBonus);
+    physics.update(this.player, this.currentSector, this.input, dt * this.adaptiveRate, speedBonus);
 
-    // 1. Check Death Boundary
+    // 1. Morte por Queda no Abismo
     if (this.player.y > (this.currentSector.deathY || 200)) {
       this.handleSectorDefeat();
       return;
     }
 
-    // 2. Check Jump Pads (Works during Dash as well)
+    // 2. Molas de Impulsão (Jump Pads)
     if (this.currentSector.jumpPads) {
       for (const pad of this.currentSector.jumpPads) {
         const dist = Math.hypot(this.player.x - pad.x, this.player.y - pad.y);
@@ -376,13 +584,13 @@ export class GameController {
       }
     }
 
-    // 3. Swept Laser Collision (Anti-tunneling during frame drops)
+    // 3. Lasers com Detecção Swept AABB
     if (this.currentSector.lasers) {
       const pTop = Math.min(prevY, this.player.y) - 34;
       const pBottom = Math.max(prevY, this.player.y);
 
       for (const laser of this.currentSector.lasers) {
-        laser.cycleTimer = (laser.cycleTimer || 0) + dt;
+        laser.cycleTimer = (laser.cycleTimer || 0) + dt * this.adaptiveRate;
         laser.active = (laser.cycleTimer % laser.cycleDuration) < (laser.cycleDuration * 0.65);
 
         if (laser.active && this.player.invulnerableTimer <= 0) {
@@ -407,7 +615,7 @@ export class GameController {
       }
     }
 
-    // 4. Data Orbs
+    // 4. Orbes de Dados
     if (this.currentSector.orbs) {
       const magnetLevel = storage.data.upgrades.magnet || 1;
       const collectRadius = 24 + magnetLevel * 10;
@@ -427,7 +635,7 @@ export class GameController {
       }
     }
 
-    // 5. Summit Core
+    // 5. Cume da Torre (Quantum Core)
     if (this.currentSector.summitCore && !this.isRoundOver) {
       const core = this.currentSector.summitCore;
       const dist = Math.hypot(this.player.x - core.x, this.player.y - core.y);
@@ -437,7 +645,7 @@ export class GameController {
       }
     }
 
-    // 6. Particles
+    // 6. Partículas
     for (let i = this.particles.length - 1; i >= 0; i--) {
       this.particles[i].life -= dt;
       if (this.particles[i].life <= 0) {
@@ -445,8 +653,19 @@ export class GameController {
       }
     }
 
-    // 7. HUD
-    this.hud.updateHUD(this.currentSector, this.player, this.levelTime, this.score);
+    // 7. HUD com Suporte a Boss Rush e Dificuldade Adaptativa
+    this.hud.updateHUD(
+      this.currentSector,
+      this.player,
+      this.levelTime,
+      this.score,
+      this.activeBoss,
+      this.gameMode,
+      this.bossRushTimer,
+      this.scoreMultiplier,
+      this.adaptiveRate
+    );
+
     this.hud.updateStarProgress(
       this.orbsCollected,
       this.currentSector.orbs.length,
@@ -457,6 +676,14 @@ export class GameController {
   }
 
   render(dt) {
-    this.engine.render(this.currentSector, this.player, this.particles, dt);
+    this.engine.render(
+      this.currentSector,
+      this.player,
+      this.particles,
+      dt,
+      this.activeBoss,
+      this.bossBullets,
+      this.healOrbs
+    );
   }
 }
