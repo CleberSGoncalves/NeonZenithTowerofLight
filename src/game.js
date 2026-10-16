@@ -37,7 +37,8 @@ export class GameController {
     this.player = null;
     this.particles = [];
 
-    this.isPaused = false;
+    this.inIntro = true;
+    this.isPaused = true;
     this.isRoundOver = false;
     this.isAdPaused = false;
     this.isHitStopped = false;
@@ -120,12 +121,16 @@ export class GameController {
     if (!this.firstInputGiven) {
       this.firstInputGiven = true;
       crazyGames.gameplayStart();
-      sound.startMusic();
+      try {
+        sound.startMusic();
+      } catch {}
     }
   }
 
   startAfterIntro() {
+    this.inIntro = false;
     this.isPaused = false;
+    this.levelTime = 0;
     this.ensureGameStarted();
     if (this.hud) this.hud.show();
   }
@@ -233,7 +238,7 @@ export class GameController {
   // ── ANTI-SOFTLOCK MANDATORY RESET IN LOADSECTOR() ──
   loadSector(sectorId) {
     this.isRoundOver = false;
-    this.isPaused = false;
+    this.isPaused = this.inIntro ? true : false;
     this.isAdPaused = false;
     this.isHitStopped = false;
     this.hasRevivedThisRound = false;
@@ -264,10 +269,12 @@ export class GameController {
 
     this.hud.updateHUD(this.currentSector, this.player, 0, 0, null, this.gameMode, 0, this.scoreMultiplier, 1.0);
     this.hud.updateStarProgress(0, this.currentSector.orbs.length, 0, this.currentSector.parTime, false);
-    if (this.firstInputGiven && this.hud) {
+    if (!this.inIntro && this.firstInputGiven && this.hud) {
       this.hud.show();
     }
-    crazyGames.gameplayStart();
+    if (!this.inIntro) {
+      crazyGames.gameplayStart();
+    }
   }
 
   restartLevel() {

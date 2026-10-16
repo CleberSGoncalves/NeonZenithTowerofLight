@@ -51,11 +51,25 @@ async function boot() {
 
   // Start Cinematic Intro Overlay (FluidCleb Interactive Splash -> Lore -> Land in Gameplay)
   if (appContainer) {
-    const intro = new CinematicIntro(appContainer, () => {
+    let introFinished = false;
+    const onIntroDone = () => {
+      if (introFinished) return;
+      introFinished = true;
       console.log('[Neon Zenith] Intro complete. Runner ready in gameplay!');
       game.startAfterIntro();
-    });
+    };
+
+    const intro = new CinematicIntro(appContainer, onIntroDone);
     intro.start();
+
+    // Absolute fallback watchdog: ensure gameplay starts after 5.5s even if intro stalls
+    setTimeout(() => {
+      if (!introFinished) {
+        console.warn('[Neon Zenith] Intro watchdog triggered. Forcing gameplay start.');
+        intro.finish();
+        onIntroDone();
+      }
+    }, 5500);
   }
 }
 

@@ -63,19 +63,30 @@ export class CinematicIntro {
     this.ctx = this.canvas.getContext('2d');
     this.loreBox = this.wrapper.querySelector('#intro-lore-box');
 
-    this.wrapper.querySelector('#btn-start-game').onclick = () => this.finish();
-    this.wrapper.querySelector('#btn-skip-lore').onclick = () => this.finish();
-
-    // 1-Click Land in Gameplay: Clicking anywhere advances instantly
-    this.wrapper.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('#btn-start-game') || e.target.closest('#btn-skip-lore')) return;
-      if (this.phase === 'splash') {
-        this.phase = 'lore';
-        if (this.loreBox) this.loreBox.classList.remove('hidden');
-      } else {
-        this.finish();
+    // 1-Click Land in Gameplay: ANY click or tap anywhere on screen instantly skips into gameplay!
+    const advanceToGame = (e) => {
+      if (e) {
+        if (e.stopPropagation) e.stopPropagation();
       }
-    });
+      this.finish();
+    };
+
+    const btnStart = this.wrapper.querySelector('#btn-start-game');
+    const btnSkip = this.wrapper.querySelector('#btn-skip-lore');
+    if (btnStart) {
+      btnStart.addEventListener('pointerdown', advanceToGame);
+      btnStart.addEventListener('click', advanceToGame);
+      btnStart.addEventListener('touchend', advanceToGame);
+    }
+    if (btnSkip) {
+      btnSkip.addEventListener('pointerdown', advanceToGame);
+      btnSkip.addEventListener('click', advanceToGame);
+      btnSkip.addEventListener('touchend', advanceToGame);
+    }
+
+    this.wrapper.addEventListener('pointerdown', advanceToGame);
+    this.wrapper.addEventListener('click', advanceToGame);
+    this.wrapper.addEventListener('touchend', advanceToGame);
 
     // Keyboard instant skip (Space, Enter, Escape)
     this.keyHandler = (e) => {
@@ -110,13 +121,25 @@ export class CinematicIntro {
     this.finished = true;
     if (this.animId) cancelAnimationFrame(this.animId);
     if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler);
-    sound.playButtonClick();
+    try {
+      sound.playButtonClick();
+    } catch {}
+
+    // Immediately notify GameController so active runner & HUD take over instantly!
+    if (this.onComplete) {
+      try {
+        this.onComplete();
+      } catch (err) {
+        console.warn('[CinematicIntro] onComplete error:', err);
+      }
+    }
 
     this.wrapper.classList.add('intro-fade-out');
     setTimeout(() => {
-      this.wrapper.remove();
-      if (this.onComplete) this.onComplete();
-    }, 380);
+      try {
+        this.wrapper.remove();
+      } catch {}
+    }, 250);
   }
 
   loop(timestamp) {
@@ -156,14 +179,14 @@ export class CinematicIntro {
       }
       ctx.globalAlpha = 1.0;
 
-      // ── PHASE 1: FLUIDCLEB INTERACTIVE PROCEDURAL SPLASH (0.0s to 2.8s) ──
-      if (elapsedSec < 2.8) {
+      // ── PHASE 1: FLUIDCLEB INTERACTIVE PROCEDURAL SPLASH (0.0s to 2.2s) ──
+      if (elapsedSec < 2.2) {
         const cx = w * 0.5;
         const cy = h * 0.44;
 
-        // 1. Two Ascending Orbs converging to center (0.0s to 1.2s)
-        if (elapsedSec < 1.3) {
-          const prog = Math.max(0, Math.min(1.0, elapsedSec / 1.1));
+        // 1. Two Ascending Orbs converging to center (0.0s to 1.0s)
+        if (elapsedSec < 1.1) {
+          const prog = Math.max(0, Math.min(1.0, elapsedSec / 0.95));
           const ease = Math.max(0, 1 - Math.pow(1 - prog, 3));
           const dist = (1 - ease) * 160;
           const orbRadius = Math.max(0.1, 14 * ease);
@@ -185,9 +208,9 @@ export class CinematicIntro {
           ctx.shadowBlur = 0;
         }
 
-        // 2. Fusion & Metallic Droplet Formation (1.2s to 2.8s)
-        if (elapsedSec >= 1.1) {
-          const dropProg = Math.max(0, Math.min(1.0, (elapsedSec - 1.1) / 0.7));
+        // 2. Fusion & Metallic Droplet Formation (0.9s to 2.2s)
+        if (elapsedSec >= 0.9) {
+          const dropProg = Math.max(0, Math.min(1.0, (elapsedSec - 0.9) / 0.6));
           const dropEase = Math.max(0.01, 1 - Math.pow(1 - dropProg, 3));
 
           ctx.save();
@@ -218,9 +241,9 @@ export class CinematicIntro {
           ctx.restore();
         }
 
-        // 3. FluidCleb Interactive Text Appearance (1.4s to 2.8s)
-        if (elapsedSec >= 1.4) {
-          const textProg = Math.max(0, Math.min(1.0, (elapsedSec - 1.4) / 0.6));
+        // 3. FluidCleb Interactive Text Appearance (1.1s to 2.2s)
+        if (elapsedSec >= 1.1) {
+          const textProg = Math.max(0, Math.min(1.0, (elapsedSec - 1.1) / 0.5));
           ctx.save();
           ctx.globalAlpha = textProg;
           ctx.textAlign = 'center';
@@ -243,7 +266,7 @@ export class CinematicIntro {
         }
 
         // 4. Subtle Progress Bar at bottom of splash
-        const barProg = Math.max(0, Math.min(1.0, elapsedSec / 2.7));
+        const barProg = Math.max(0, Math.min(1.0, elapsedSec / 2.1));
         ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
         ctx.fillRect(cx - 80, cy + 115, 160, 4);
         ctx.fillStyle = '#00f5ff';
@@ -252,13 +275,13 @@ export class CinematicIntro {
         ctx.fillRect(cx - 80, cy + 115, 160 * barProg, 4);
         ctx.shadowBlur = 0;
       } else {
-        // ── PHASE 2: LORE OVERLAY & LAND IN GAMEPLAY (>= 2.8s) ──
+        // ── PHASE 2: LORE OVERLAY & LAND IN GAMEPLAY (>= 2.2s) ──
         if (this.loreBox && this.loreBox.classList.contains('hidden')) {
           this.loreBox.classList.remove('hidden');
           this.loreStartTime = timestamp;
         }
-        // Auto-advance to gameplay after 4.5s of lore if user is passive
-        if (this.loreStartTime && (timestamp - this.loreStartTime) > 4500) {
+        // Auto-advance to gameplay smoothly after 1.4s of lore if user is passive
+        if (this.loreStartTime && (timestamp - this.loreStartTime) > 1400) {
           this.finish();
           return;
         }
