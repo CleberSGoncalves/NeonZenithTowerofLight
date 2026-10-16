@@ -18,7 +18,11 @@ class CrazyGamesBridge {
     if (typeof window !== 'undefined' && window.CrazyGames && window.CrazyGames.SDK) {
       try {
         this.sdk = window.CrazyGames.SDK;
-        await this.sdk.init();
+        // Watchdog: If SDK.init() takes longer than 600ms (e.g. 7s check outside CrazyGames), continue without blocking
+        await Promise.race([
+          this.sdk.init(),
+          new Promise((resolve) => setTimeout(resolve, 600))
+        ]);
         this.isInitialized = true;
         console.log('[CrazyGames] SDK v3 initialized successfully ✓');
       } catch (err) {

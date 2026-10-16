@@ -76,5 +76,72 @@ func _create_heal_orb(pos: Vector2) -> void:
 	get_parent().add_child(orb)
 
 func _spawn_dynamic_hazard() -> void:
-	# Spawn procedural leve de obstáculos na área
-	pass
+	var roll := randf()
+	if roll < 0.55:
+		_spawn_data_orb()
+	else:
+		_spawn_laser_hazard()
+
+func _spawn_data_orb() -> void:
+	var orb := Area2D.new()
+	orb.position = Vector2(randf_range(60, 1220), randf_range(60, 660))
+	
+	var col := CollisionShape2D.new()
+	var shape := CircleShape2D.new()
+	shape.radius = 14.0
+	col.shape = shape
+	orb.add_child(col)
+	
+	var rect := ColorRect.new()
+	rect.size = Vector2(18, 18)
+	rect.position = Vector2(-9, -9)
+	rect.color = Color(0.0, 0.96, 1.0, 0.95)
+	orb.add_child(rect)
+	
+	orb.body_entered.connect(func(body: Node2D):
+		if body.is_in_group("player"):
+			if GameManager:
+				GameManager.add_score(100)
+			if EventBus:
+				EventBus.play_sfx.emit("collect_orb")
+			orb.queue_free()
+	)
+	get_parent().add_child(orb)
+
+func _spawn_laser_hazard() -> void:
+	var hazard := Area2D.new()
+	var start_x := randf_range(100, 1180)
+	hazard.position = Vector2(start_x, -40)
+	
+	var col := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(30, 60)
+	col.shape = shape
+	hazard.add_child(col)
+	
+	var rect := ColorRect.new()
+	rect.size = Vector2(24, 50)
+	rect.position = Vector2(-12, -25)
+	rect.color = Color(0.95, 0.2, 0.35, 0.9)
+	hazard.add_child(rect)
+	
+	hazard.body_entered.connect(func(body: Node2D):
+		if body.is_in_group("player"):
+			var player_node = body
+			if player_node.get("is_dashing") == true:
+				return # Esquiva com Dash!
+			if GameManager:
+				GameManager.take_damage(20)
+			if EventBus:
+				EventBus.play_sfx.emit("hit")
+				EventBus.screen_shake_requested.emit(0.35)
+			hazard.queue_free()
+	)
+	
+	# Movimento vertical do perigo
+	var tween := hazard.create_tween()
+	tween.tween_property(hazard, "position:y", 760.0, 3.2 / current_rate_multiplier)
+	tween.tween_callback(hazard.queue_free)
+	
+	get_parent().add_child(hazard)
+

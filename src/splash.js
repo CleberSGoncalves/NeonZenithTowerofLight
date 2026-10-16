@@ -66,6 +66,25 @@ export class CinematicIntro {
     this.wrapper.querySelector('#btn-start-game').onclick = () => this.finish();
     this.wrapper.querySelector('#btn-skip-lore').onclick = () => this.finish();
 
+    // 1-Click Land in Gameplay: Clicking anywhere advances instantly
+    this.wrapper.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('#btn-start-game') || e.target.closest('#btn-skip-lore')) return;
+      if (this.phase === 'splash') {
+        this.phase = 'lore';
+        if (this.loreBox) this.loreBox.classList.remove('hidden');
+      } else {
+        this.finish();
+      }
+    });
+
+    // Keyboard instant skip (Space, Enter, Escape)
+    this.keyHandler = (e) => {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') {
+        this.finish();
+      }
+    };
+    window.addEventListener('keydown', this.keyHandler);
+
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -90,6 +109,7 @@ export class CinematicIntro {
     if (this.finished) return;
     this.finished = true;
     if (this.animId) cancelAnimationFrame(this.animId);
+    if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler);
     sound.playButtonClick();
 
     this.wrapper.classList.add('intro-fade-out');
@@ -232,6 +252,12 @@ export class CinematicIntro {
       // ── PHASE 2: LORE OVERLAY & LAND IN GAMEPLAY (>= 2.8s) ──
       if (this.loreBox && this.loreBox.classList.contains('hidden')) {
         this.loreBox.classList.remove('hidden');
+        this.loreStartTime = timestamp;
+      }
+      // Auto-advance to gameplay after 4.5s of lore if user is passive
+      if (this.loreStartTime && (timestamp - this.loreStartTime) > 4500) {
+        this.finish();
+        return;
       }
     }
 

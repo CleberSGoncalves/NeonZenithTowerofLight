@@ -64,8 +64,14 @@ export class GameController {
     // Instantiate HUD
     this.hud = new GameHUD({
       touchInput: this.touchInput,
-      onTouchJump: () => this.handleJumpInput(),
-      onTouchDash: () => this.handleDashInput(),
+      onTouchJump: () => {
+        this.ensureGameStarted();
+        this.handleJumpInput();
+      },
+      onTouchDash: () => {
+        this.ensureGameStarted();
+        this.handleDashInput();
+      },
       onRestartLevel: () => this.restartLevel(),
       onSelectSector: (id) => this.loadSector(id),
       onClaimStarPass: () => this.handleClaimStarPass(),
@@ -90,6 +96,16 @@ export class GameController {
       }
     });
 
+    // Canvas click/tap to jump and start
+    if (this.canvas) {
+      this.canvas.addEventListener('pointerdown', (e) => {
+        // Don't trigger if click is on UI buttons
+        if (e.target !== this.canvas) return;
+        this.ensureGameStarted();
+        this.handleJumpInput();
+      });
+    }
+
     // Connect buffered jump audio/VFX callback
     physics.onBufferedJump = () => {
       sound.playJump();
@@ -98,6 +114,19 @@ export class GameController {
 
     this.setupKeyboard();
     this.loadSector(this.currentSectorIndex);
+  }
+
+  ensureGameStarted() {
+    if (!this.firstInputGiven) {
+      this.firstInputGiven = true;
+      crazyGames.gameplayStart();
+      sound.startMusic();
+    }
+  }
+
+  startAfterIntro() {
+    this.isPaused = false;
+    this.ensureGameStarted();
   }
 
   toggleGameMode() {

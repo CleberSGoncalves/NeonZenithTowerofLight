@@ -9,11 +9,8 @@ import { CinematicIntro } from './splash.js';
 import { GameController } from './game.js';
 import { sound } from './audio.js';
 
-window.addEventListener('DOMContentLoaded', async () => {
+async function boot() {
   console.log('[Neon Zenith: Tower of Light] Booting up...');
-
-  // Initialize CrazyGames SDK v3
-  await crazyGames.init();
 
   const appContainer = document.getElementById('app');
   const canvas = document.getElementById('game-canvas');
@@ -27,28 +24,44 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('pointerdown', resumeAudioOnGesture);
   window.addEventListener('keydown', resumeAudioOnGesture);
 
-  // Start Cinematic Intro (FluidCleb Interactive Splash -> Lore -> Land in Gameplay)
-  const intro = new CinematicIntro(appContainer, () => {
-    console.log('[Neon Zenith] Intro complete. Starting Gameplay Loop...');
+  // Initialize CrazyGames SDK v3 (protected with 600ms watchdog in crazygames.js)
+  try {
+    await crazyGames.init();
+  } catch (err) {
+    console.warn('[CrazyGames] SDK init bypassed:', err);
+  }
 
-    // Instantiate Central Game Controller
-    const game = new GameController(canvas);
+  // Instantiate Central Game Controller immediately so canvas & HUD are live
+  const game = new GameController(canvas);
 
-    // High performance Delta-Time Loop
-    let lastTime = performance.now();
+  // High performance Delta-Time Loop
+  let lastTime = performance.now();
 
-    function gameLoop(currentTime) {
-      const dt = Math.min(0.05, (currentTime - lastTime) / 1000);
-      lastTime = currentTime;
+  function gameLoop(currentTime) {
+    const dt = Math.min(0.05, (currentTime - lastTime) / 1000);
+    lastTime = currentTime;
 
-      game.update(dt);
-      game.render(dt);
-
-      requestAnimationFrame(gameLoop);
-    }
+    game.update(dt);
+    game.render(dt);
 
     requestAnimationFrame(gameLoop);
-  });
+  }
 
-  intro.start();
-});
+  requestAnimationFrame(gameLoop);
+
+  // Start Cinematic Intro Overlay (FluidCleb Interactive Splash -> Lore -> Land in Gameplay)
+  if (appContainer) {
+    const intro = new CinematicIntro(appContainer, () => {
+      console.log('[Neon Zenith] Intro complete. Runner ready in gameplay!');
+      game.startAfterIntro();
+    });
+    intro.start();
+  }
+}
+
+// Guaranteed boot execution regardless of script load timing
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
