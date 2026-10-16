@@ -42,6 +42,16 @@ export class GameHUD {
     this.updateTexts();
   }
 
+  show() {
+    const el = document.getElementById('in-game-hud');
+    if (el) el.classList.remove('hidden');
+  }
+
+  hide() {
+    const el = document.getElementById('in-game-hud');
+    if (el) el.classList.add('hidden');
+  }
+
   setupListeners() {
     document.getElementById('btn-sector-select').onclick = () => {
       sound.playButtonClick();

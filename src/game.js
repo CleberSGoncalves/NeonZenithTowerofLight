@@ -127,6 +127,7 @@ export class GameController {
   startAfterIntro() {
     this.isPaused = false;
     this.ensureGameStarted();
+    if (this.hud) this.hud.show();
   }
 
   toggleGameMode() {
@@ -263,6 +264,9 @@ export class GameController {
 
     this.hud.updateHUD(this.currentSector, this.player, 0, 0, null, this.gameMode, 0, this.scoreMultiplier, 1.0);
     this.hud.updateStarProgress(0, this.currentSector.orbs.length, 0, this.currentSector.parTime, false);
+    if (this.firstInputGiven && this.hud) {
+      this.hud.show();
+    }
     crazyGames.gameplayStart();
   }
 

@@ -52,32 +52,54 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   3-ROW FLEX COLUMN MASTER STAGE
+   100% FULLSCREEN MASTER GAME STAGE
+   Canvas fills 100% of viewport. In-game HUD floats cleanly inside!
    ══════════════════════════════════════════════════════════════════ */
-#game-stage {
-  display: flex;
-  flex-direction: column;
+#game-stage, .game-stage-fullscreen {
+  position: relative;
   width: 100vw;
+  height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  position: relative;
+  background: var(--color-bg);
 }
 
-/* ──────────────────────────────────────────────────────────────────
-   FAIXA 1: HUD TOP BAR (flex: 0 0 auto)
-   ────────────────────────────────────────────────────────────────── */
-#hud-top-bar {
+/* ══════════════════════════════════════════════════════════════════
+   INTEGRATED IN-GAME HUD (Overlay on top of canvas)
+   Completely hidden during Splash/Intro/Lore, appears only in gameplay!
+   ══════════════════════════════════════════════════════════════════ */
+.in-game-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: opacity 0.3s ease;
+}
+
+.in-game-hud.hidden {
+  display: none !important;
+}
+
+/* Integrated Floating Top Bar (Over canvas) */
+#hud-top-bar, .hud-top-bar-integrated {
+  width: 100%;
   flex: 0 0 auto;
-  z-index: 10;
+  z-index: 52;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--safe-top) 12px 6px 12px;
-  background: linear-gradient(180deg, rgba(2, 6, 23, 0.96) 0%, rgba(15, 23, 42, 0.9) 100%);
-  border-bottom: 1px solid rgba(0, 245, 255, 0.28);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  padding: var(--safe-top) 12px 10px 12px;
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.82) 0%, rgba(2, 6, 23, 0.35) 65%, rgba(2, 6, 23, 0) 100%);
   gap: 8px;
+  pointer-events: none;
   position: relative;
+}
+
+.hud-top-bar-integrated * {
+  pointer-events: auto;
 }
 
 .hud-left-group, .hud-right-group {
@@ -343,21 +365,11 @@ html, body {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   FAIXA 2: CANVAS WRAP (flex: 1 1 auto; min-height: 0)
+   FULLSCREEN CANVAS
    ────────────────────────────────────────────────────────────────── */
-#canvas-wrap {
-  flex: 1 1 auto;
-  min-height: 0;
-  position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: radial-gradient(circle at 50% 40%, #030d24 0%, #020617 80%);
-}
-
 #game-canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
@@ -374,7 +386,7 @@ html, body {
   align-items: center;
   gap: 6px;
   pointer-events: none;
-  z-index: 20;
+  z-index: 55;
 }
 
 .floating-combo-pill {
@@ -397,25 +409,32 @@ html, body {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   FAIXA 3: HUD BOTTOM BAR (flex: 0 0 auto)
+   INTEGRATED FLOATING BOTTOM BAR (Touch controls over canvas)
    ────────────────────────────────────────────────────────────────── */
-#hud-bottom-bar {
+#hud-bottom-bar, .hud-bottom-bar-integrated {
+  width: 100%;
   flex: 0 0 auto;
-  z-index: 10;
-  padding: 6px 12px var(--safe-bottom) 12px;
-  background: linear-gradient(0deg, rgba(2, 6, 23, 0.98) 0%, rgba(15, 23, 42, 0.92) 100%);
-  border-top: 1px solid rgba(0, 245, 255, 0.28);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+  z-index: 52;
+  padding: 0 16px var(--safe-bottom) 16px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  pointer-events: none;
+  margin-top: auto;
+}
+
+.hud-bottom-bar-integrated * {
+  pointer-events: auto;
 }
 
 .touch-controls-container {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   width: 100%;
+  pointer-events: none;
 }
 
 .touch-cluster-left {
